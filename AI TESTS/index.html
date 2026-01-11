@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Bar Test</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Resource Bar Demo</h1>
+    
+    <div class="resources">
+        <div class="resource-container">
+            <div class="resource-label">Wood</div>
+            <div class="resource-bar-bg">
+                <div class="resource-bar-fill" id="wood-bar"></div>
+            </div>
+            <div class="resource-text" id="wood-text">0 / 100</div>
+        </div>
+
+        <div class="resource-container">
+            <div class="resource-label">Stone</div>
+            <div class="resource-bar-bg">
+                <div class="resource-bar-fill" id="stone-bar"></div>
+            </div>
+            <div class="resource-text" id="stone-text">0 / 100</div>
+        </div>
+
+        <div class="resource-container">
+            <div class="resource-label">Food</div>
+            <div class="resource-bar-bg">
+                <div class="resource-bar-fill" id="food-bar"></div>
+            </div>
+            <div class="resource-text" id="food-text">0 / 100</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <h2>Controls</h2>
+        <button onclick="addWorker(1)">Add Worker</button>
+        <button onclick="assignWorker('lumberMill', 1)">Assign to Lumber Mill</button>
+        <button onclick="assignWorker('quarry', 1)">Assign to Quarry</button>
+        <button onclick="assignWorker('farm', 1)">Assign to Farm</button>
+    </div>
+
+    <div class="workers">
+        <h2>Workers</h2>
+        <div id="worker-display"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
