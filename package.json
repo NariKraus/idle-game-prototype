@@ -1,0 +1,21 @@
+{
+    "name": "idle-game-prototype",
+    "version": "1.0.0",
+    "description": "",
+    "main": "script.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev": "npx mix",
+        "watch": "npx mix watch",
+        "production": "npx mix --production"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "laravel-mix": "^6.0.49",
+        "resolve-url-loader": "^5.0.0",
+        "sass": "^1.97.2",
+        "sass-loader": "^12.1.0"
+    }
+}
