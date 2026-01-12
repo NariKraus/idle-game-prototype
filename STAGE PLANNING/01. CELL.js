@@ -1,3 +1,6 @@
+/* 
+Old code for reference - do not re-add
+
 CELL_STAGE_DATA = {
     resources: {
         atp: {
@@ -257,20 +260,6 @@ CELL_STAGE_DATA = {
             },
         },
         // Saprotrophic Lineage
-        // -   **Extracellular Digestion:**
-        //     -   _Default Cost:_ 200 Biomass, 50 ATP, 25 DNA
-        //     -   _Waste Production:_ 0.15 Waste per second
-        //     -   _Unlock Condition:_ Requires Nucleus.
-        //     -   Generates 1 Nutrients per second by consuming 0.5 Waste.
-        // -   **Hyphae:**
-        //     -   _Default Cost:_ 400 Biomass, 100 ATP, 100 DNA
-        //     -   _Waste Production:_ 0.1 Waste per second
-        //     -   _Unlock Condition:_ Requires Extracellular Digestion.
-        //     -   Improves the output of Extracellular Digestion by 20%.
-        // -   **Spore Production:**
-        //     -   _Default Cost:_ 800 Biomass, 200 ATP, 500 DNA
-        //     -   _Unlock Condition:_ Requires Hyphae.
-        //     -   Unlocks Cellular Differentiation, allowing progression to the next stage.
         extracellularDigestion: {
             name: 'Extracellular Digestion',
             description: 'Allows the cell to break down external organic matter to absorb nutrients.',
@@ -483,3 +472,103 @@ CELL_STAGE_DATA = {
 };
 
 module.exports = CELL_STAGE_DATA;
+*/
+
+// === === === === === === === === === === === === === === === === === === === === === === === === === === === ===
+
+// GameState has very basic data, referencing an object of class instances defined elsewhere.
+// The reference object is a class that updates based on the GameState data, and handles all logic and calculations lazily.
+// General sensus, the GameState should be able to be modified and imported/exported cleanly, acting as a save file, whereas the `Currently Unnamed` object handles all the heavy lifting
+
+/** Things to figure out:
+ * How to detect when buildings and upgrades are unlocked, purchased, etc.
+ * How to handle effects that modify other buildings/upgrades (e.g. Chloroplast increasing nutrient production)
+ * How to handle conditional effects (e.g. Autophagy generating ATP only when biomass is in excess)
+ * How to handle lineage-specific buildings and upgrades
+ * How to keep the data organized and maintainable as more buildings and upgrades are added
+ * How to ensure that the code is efficient and not bloated with unnecessary calculations, data, or repetitive structures
+ * */
+
+const GAME_STATE = {
+    resources: {
+        atp: 0,
+        biomass: 0,
+        dna: 0,
+        nutrients: 0,
+        waste: 0,
+    },
+    buildings: {
+        cellMembrane: 0,
+        mitochondrion: 0,
+        vacuole: 0,
+        surfaceFolds: 0,
+        ribosome: 0,
+        lysosome: 0,
+        nucleus: 0,
+        chloroplast: 0,
+        thylakoidMembrane: 0,
+        cellWall: 0,
+        endoplasmicReticulum: 0,
+        transportProteins: 0,
+        flagellum: 0,
+        extracellularDigestion: 0,
+        hyphae: 0,
+        sporeProduction: 0,
+    },
+    upgrades: {
+        reinforcedMembrane: false,
+        increasedSurfaceArea: false,
+        enhancedTransport: false,
+        proteinFolding: false,
+        parallelSynthesis: false,
+        structuralProteins: false,
+        autophagy: false,
+        selectiveBreakdown: false,
+        geneDuplication: false,
+        epigenetics: false,
+        genomeCompression: false,
+    },
+};
+
+const modifiersExample = [
+    {
+        _id: 'upgrade.cell.reinforcedMembrane',
+        targets: ['resource.atp', 'resource.biomass', 'resource.dna', 'resource.nutrients'],
+        types: ['maxStorage'],
+        method: 'mult',
+        value: 2,
+    },
+    {
+        _id: 'building.cell.thylakoidMembrane.boostChloroplast',
+        targets: ['building.cell.chloroplast'],
+        types: ['production.nutrients'],
+        method: 'mult',
+        value: 1.5,
+    },
+];
+
+const building = {
+    cell: {
+        cellMembrane: {
+            name: 'Cell Membrane',
+            description: 'The outer layer of the cell that regulates nutrient intake and waste expulsion.',
+            cost: {},
+            unlockCondition: null,
+            production: {
+                atp: 0.05, // Passive ATP generation to prevent stagnation
+            },
+            storage: {},
+        },
+        thylakoidMembrane: {
+            name: 'Thylakoid Membrane',
+            description: 'Enhances the efficiency of chloroplasts in nutrient production.',
+            cost: {biomass: 400, atp: 100, dna: 100},
+            unlockCondition: {chloroplast: 1},
+            production: {
+                waste: 0.05,
+            },
+            storage: {},
+            modifiers: ['building.cell.thylakoidMembrane.boostChloroplast'],
+        },
+    },
+};
