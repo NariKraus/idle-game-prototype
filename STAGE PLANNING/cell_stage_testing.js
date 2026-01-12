@@ -14,6 +14,7 @@ function deepClone(obj) {
 }
 
 if (!sections || sections.includes('cell')) runCellTests();
+if (!sections || sections.includes('deltaTick')) runDeltaTickTests();
 
 function runCellTests() {
     // Cell class for testable nutrient gathering
@@ -153,4 +154,211 @@ function runCellTests() {
     cells[6].purchaseUpgrade('increasedSurfaceArea');
 
     cellTests.runAll();
+}
+
+function runDeltaTickTests() {
+    const gameState = deepClone(CELL_STAGE_DATA);
+    gameState.lastTick = 0;
+
+    class CellStage {
+        constructor(data) {
+            this._buildings = data.buildings;
+            this._upgrades = data.upgrades;
+
+            this.buildings = {};
+            for (const [bldKey, bldData] of Object.entries(this._buildings)) {
+                this.buildings[bldKey] = new Building(bldKey, bldData, this);
+            }
+        }
+
+        getAllEffectsForBuilding(buildingKey, effectType) {
+            let effects = [];
+
+            // 1. Building's own effects
+            const building = this._buildings[buildingKey];
+            if (building.effects && building.effects[effectType]) {
+                effects = effects.concat(building.effects[effectType]);
+            }
+
+            // 2. Effects from other buildings that target this building
+            for (const [otherKey, otherData] of Object.entries(this._buildings)) {
+                if (otherKey === buildingKey) continue;
+                if (otherData.count && otherData.effects && otherData.effects[effectType]) {
+                    for (const eff of otherData.effects[effectType]) {
+                        if (eff.building === buildingKey) {
+                            effects.push(eff);
+                        }
+                    }
+                }
+            }
+
+            // 3. Effects from upgrades that target this building
+            for (const upg of Object.values(this._upgrades)) {
+                if (upg.purchased && upg.effects && upg.effects[effectType]) {
+                    for (const eff of upg.effects[effectType]) {
+                        if (eff.building === buildingKey) {
+                            effects.push(eff);
+                        }
+                    }
+                }
+            }
+
+            return effects;
+        }
+    }
+
+    class Building {
+        constructor(key, data, cellStage) {
+            this.key = key;
+            this.data = data;
+            this.cellStage = cellStage;
+        }
+
+        get resourceChangeRate() {
+            let rate = this.productionRate;
+            // Add waste production
+            rate.waste = (rate.waste || 0) + this.wasteProductionRate;
+            return rate;
+        }
+
+        get productionRate() {
+            if (!this._productionCache || this._productionCacheInvalid) {
+                this._productionCache = this.getProduction();
+                this._productionCacheInvalid = false;
+            }
+            return this._productionCache;
+        }
+
+        get wasteProductionRate() {
+            if (!this._wasteCache || this._wasteCacheInvalid) {
+                this._wasteCache = this.getWasteProduction();
+                this._wasteCacheInvalid = false;
+            }
+            return this._wasteCache;
+        }
+
+        getProduction() {
+            // Query the master for all effects
+            const effects = this.cellStage.getAllEffectsForBuilding(this.key, 'production').reduce(
+                (acc, val) => {
+                    // Group by type
+                    if (val.type === 'additive') {
+                        acc.additive.push(val);
+                    } else if (val.type === 'multiplicative') {
+                        acc.multiplicative.push(val);
+                    } else if (val.type === 'set') {
+                        acc.set.push(val);
+                    }
+                    return acc;
+                },
+                {additive: [], multiplicative: [], set: []}
+            );
+
+            let totalProduction = {};
+            // Apply additive effects
+            effects.additive.forEach((eff) => {
+                if (!totalProduction[eff.resource]) totalProduction[eff.resource] = 0;
+                totalProduction[eff.resource] += eff.value;
+            });
+            // Apply multiplicative effects
+            effects.multiplicative.forEach((eff) => {
+                if (!totalProduction[eff.resource]) totalProduction[eff.resource] = 0;
+                totalProduction[eff.resource] *= eff.value;
+            });
+            // Apply set effects
+            effects.set.forEach((eff) => {
+                totalProduction[eff.resource] = eff.value;
+            });
+
+            return totalProduction;
+        }
+
+        getWasteProduction() {
+            // Query the master for all effects
+            const effects = this.cellStage.getAllEffectsForBuilding(this.key, 'wasteProduction').reduce(
+                (acc, val) => {
+                    // Group by type
+                    if (val.type === 'additive') {
+                        acc.additive.push(val);
+                    } else if (val.type === 'multiplicative') {
+                        acc.multiplicative.push(val);
+                    } else if (val.type === 'set') {
+                        acc.set.push(val);
+                    }
+                    return acc;
+                },
+                {additive: [], multiplicative: [], set: []}
+            );
+            let totalWasteProduction = this.data.wasteProduction || 0;
+            // Apply additive effects
+            effects.additive.forEach((eff) => {
+                totalWasteProduction += eff.value;
+            });
+            // Apply multiplicative effects
+            effects.multiplicative.forEach((eff) => {
+                totalWasteProduction *= eff.value;
+            });
+            // Apply set effects
+            effects.set.forEach((eff) => {
+                totalWasteProduction = eff.value;
+            });
+            return totalWasteProduction;
+        }
+    }
+
+    const cellStage = new CellStage(gameState);
+
+    // Helper: Apply resource change with validation
+    function applyResourceChange(resource, change) {
+        const newAmount = resource.amount + change;
+        // Clamp between 0 and max capacity
+        resource.amount = Math.max(0, Math.min(newAmount, resource.max));
+        
+        // Optional: Return whether we hit a boundary (useful for detecting bottlenecks)
+        return {
+            capped: newAmount > resource.max,
+            depleted: newAmount < 0
+        };
+    }
+
+    function gameTick() {
+        const now = gameState.lastTick + 1000; // Simulate 1 second later
+        const deltaTime = (now - gameState.lastTick) / 1000;
+        gameState.lastTick = now;
+
+        // Resource generation logic
+        for (const [bldKey, bldData] of Object.entries(gameState.buildings)) {
+            if (bldData.count) {
+                // Use the cellStage's Building instance for effect calculations
+                const building = cellStage.buildings[bldKey];
+                const rate = building.resourceChangeRate;
+                for (const [resKey, resChange] of Object.entries(rate)) {
+                    const resource = gameState.resources[resKey];
+                    // Only update if resource exists
+                    if (resource && typeof resource.amount === 'number') {
+                        const totalChange = resChange * bldData.count * deltaTime;
+                        applyResourceChange(resource, totalChange);
+                    }
+                }
+            }
+        }
+    }
+
+    // Set up initial state on gameState, not cellStage
+    gameState.buildings.Mitochondrion.count = 1;
+    gameState.resources.nutrients.amount = 100;
+
+    gameTick();
+
+    /**
+     * Nutrients -> 99
+     * ATP -> 4
+     * Biomass -> 0.25
+     * Waste -> 0.1
+     *  */
+    // Print the updated resource amounts
+    const resourceAmounts = Object.fromEntries(
+        Object.entries(gameState.resources).map(([k, v]) => [k, v.amount])
+    );
+    console.log('Post-tick Resources:', resourceAmounts);
 }
