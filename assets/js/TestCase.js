@@ -7,8 +7,14 @@ class TestCase {
         this.results = [];
     }
 
-    test(name, testFn, expected) {
-        this.tests.push({ name, testFn, expected });
+    /**
+     * shouldFail: false | 'error' | 'mismatch'
+     *   false: normal test (should pass)
+     *   'error': test should throw
+     *   'mismatch': test should NOT equal expected
+     */
+    test(name, testFn, expected, shouldFail = false) {
+        this.tests.push({ name, testFn, expected, shouldFail });
     }
 
     runAll() {
@@ -23,17 +29,32 @@ class TestCase {
     }
 
     runTest(test, index) {
+        let actual = null;
+        let error = null;
+        let passed = false;
         try {
-            const actual = test.testFn();
-            const passed = this.compareValues(actual, test.expected);
-            const result = { name: test.name, passed, actual, expected: test.expected, error: null };
-            this.logResult(index, result);
-            return result;
-        } catch (error) {
-            const result = { name: test.name, passed: false, actual: null, expected: test.expected, error: error.message };
-            this.logResult(index, result);
-            return result;
+            actual = test.testFn();
+            if (test.shouldFail === 'error') {
+                // Should have thrown, but didn't
+                passed = false;
+            } else if (test.shouldFail === 'mismatch') {
+                // Should NOT match expected
+                passed = !this.compareValues(actual, test.expected);
+            } else {
+                // Normal: should match expected
+                passed = this.compareValues(actual, test.expected);
+            }
+        } catch (err) {
+            error = err.message;
+            if (test.shouldFail === 'error') {
+                passed = true; // Error was expected
+            } else {
+                passed = false;
+            }
         }
+        const result = { name: test.name, passed, actual, expected: test.expected, error, shouldFail: test.shouldFail };
+        this.logResult(index, result);
+        return result;
     }
 
     compareValues(actual, expected) {
@@ -50,24 +71,39 @@ class TestCase {
     }
 
     logResult(index, result) {
-        const icon = result.passed ? '✓' : '✗';
-        const style = result.passed ? '\x1b[32m' : '\x1b[31m';
-        console.log(`${style}${icon} Test ${index}: ${result.name}\x1b[0m`);
-        if (!result.passed) {
+        let icon = result.passed ? '✓' : '✗';
+        let style = result.passed ? '\x1b[32m' : '\x1b[31m';
+        let statusMsg = '';
+        if (result.shouldFail && result.passed) {
+            statusMsg = ' (failed as expected)';
+            style = '\x1b[33m';
+            icon = '!';
+        }
+        let line = `${style}${icon} Test ${index}: ${result.name}${statusMsg}`;
+        if (result.passed && !result.shouldFail) {
+            line += ` [${result.actual}]`;
+        }
+        line += '\x1b[0m';
+        console.log(line);
+        // Only show details for failures or error cases
+        if (!result.passed || result.shouldFail) {
             if (result.error) {
                 console.log(`  Error: ${result.error}`);
-            } else {
-                console.log(`  Expected:`, result.expected);
-                console.log(`  Actual:`, result.actual);
             }
+            console.log(`  Expected:`, result.expected);
+            console.log(`  Actual:`, result.actual);
         }
     }
 
     displaySummary() {
-        const passed = this.results.filter(r => r.passed).length;
-        const failed = this.results.length - passed;
+        const passed = this.results.filter(r => r.passed && !r.shouldFail).length;
+        const failedAsExpected = this.results.filter(r => r.shouldFail && r.passed).length;
+        const failed = this.results.length - passed - failedAsExpected;
         console.log('\n=== Test Summary ===');
         console.log(`\x1b[32mPassed: ${passed}\x1b[0m`);
+        if (failedAsExpected > 0) {
+            console.log(`\x1b[33mFailed as Expected: ${failedAsExpected}\x1b[0m`);
+        }
         console.log(`\x1b[31mFailed: ${failed}\x1b[0m`);
         console.log(`Total: ${this.results.length}`);
         if (failed === 0) {

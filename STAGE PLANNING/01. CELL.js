@@ -67,7 +67,7 @@ CELL_STAGE_DATA = {
             count: 0,
             singlePurchase: true,
             effects: {
-                nutrientAbsorption: {value: 1, type: 'additive'}, // Increases nutrients absorbed per click
+                nutrientAbsorption: [{resource: 'nutrientAbsorption', value: 1, type: 'additive'}], // Increases nutrients absorbed per click
             },
         },
         Mitochondrion: {
@@ -80,14 +80,14 @@ CELL_STAGE_DATA = {
             count: 0,
             singlePurchase: false,
             effects: {
-                production: {
-                    atp: {value: 4, type: 'additive'}, // Generates 4 atp per second
-                    biomass: {value: 0.25, type: 'additive'}, // Generates 0.25 biomass per second
-                    nutrients: {value: -1, type: 'additive'}, // Consumes 1 Nutrient per second
-                },
-                storage: {
-                    atp: {value: 50, type: 'additive'}, // Increases atp storage by 50
-                },
+                production: [
+                    {resource: 'atp', value: 4, type: 'additive'}, // Generates 4 atp per second
+                    {resource: 'biomass', value: 0.25, type: 'additive'}, // Generates 0.25 biomass per second
+                    {resource: 'nutrients', value: -1, type: 'additive'}, // Consumes 1 Nutrient per second
+                ],
+                storage: [
+                    {resource: 'atp', value: 50, type: 'additive'}, // Increases atp storage by 50
+                ],
             },
         },
         Vacuole: {
@@ -100,10 +100,10 @@ CELL_STAGE_DATA = {
             count: 0,
             singlePurchase: false,
             effects: {
-                storage: {
-                    nutrients: {value: 50, type: 'additive'}, // Increases Nutrient storage by 50
-                    biomass: {value: 75, type: 'additive'}, // Increases biomass storage by 75
-                },
+                storage: [
+                    {resource: 'nutrients', value: 50, type: 'additive'}, // Increases Nutrient storage by 50
+                    {resource: 'biomass', value: 75, type: 'additive'}, // Increases biomass storage by 75
+                ],
             },
         },
         surfaceFolds: {
@@ -116,7 +116,7 @@ CELL_STAGE_DATA = {
             count: 0,
             singlePurchase: true,
             effects: {
-                nutrientAbsorption: {value: 1, type: 'additive'}, // Increases nutrients absorbed per click
+                nutrientAbsorption: [{resource: 'nutrientAbsorption', value: 1, type: 'additive'}], // Increases nutrients absorbed per click
             },
         },
         ribosome: {
@@ -129,11 +129,11 @@ CELL_STAGE_DATA = {
             count: 0,
             singlePurchase: false,
             effects: {
-                production: {
-                    biomass: {value: 2, type: 'additive'}, // Generates 2 Biomass per second
-                    atp: {value: -1, type: 'additive'}, // Consumes 1 ATP per second
-                    nutrients: {value: -1, type: 'additive'}, // Consumes 1 Nutrient per second
-                },
+                production: [
+                    {resource: 'biomass', value: 2, type: 'additive'}, // Generates 2 Biomass per second
+                    {resource: 'atp', value: -1, type: 'additive'}, // Consumes 1 ATP per second
+                    {resource: 'nutrients', value: -1, type: 'additive'}, // Consumes 1 Nutrient per second
+                ],
             },
         },
         lysosome: {
@@ -157,11 +157,11 @@ CELL_STAGE_DATA = {
             count: 0,
             singlePurchase: true,
             effects: {
-                production: {
-                    dna: {value: 0.1, type: 'additive'}, // Generates 0.1 DNA per second
-                    atp: {value: -5, type: 'additive'}, // Consumes 5 ATP per second
-                    nutrients: {value: -5, type: 'additive'}, // Consumes 5 Nutrients per second
-                },
+                production: [
+                    {resource: 'dna', value: 0.1, type: 'additive'}, // Generates 0.1 DNA per second
+                    {resource: 'atp', value: -5, type: 'additive'}, // Consumes 5 ATP per second
+                    {resource: 'nutrients', value: -5, type: 'additive'}, // Consumes 5 Nutrients per second
+                ],
             },
         },
         // Autotrophic Lineage
@@ -175,9 +175,9 @@ CELL_STAGE_DATA = {
             count: 0,
             singlePurchase: false,
             effects: {
-                production: {
-                    nutrients: {value: 0.5, type: 'additive'}, // Generates 0.5 Nutrients per second
-                },
+                production: [
+                    {resource: 'nutrients', value: 0.5, type: 'additive'}, // Generates 0.5 Nutrients per second
+                ],
                 lineage: 'autotrophic',
             },
         },
@@ -191,9 +191,9 @@ CELL_STAGE_DATA = {
             count: 0,
             singlePurchase: true,
             effects: {
-                production: {
-                    chloroplast: {value: 1.5, type: 'multiplicative'}, // Improves Chloroplast output by 50%
-                },
+                production: [
+                    {building: 'chloroplast', value: 1.5, type: 'multiplicative'}, // Improves Chloroplast output by 50%
+                ],
                 lineage: 'autotrophic',
             },
         },
@@ -222,9 +222,9 @@ CELL_STAGE_DATA = {
             count: 0,
             singlePurchase: false,
             effects: {
-                production: {
-                    mitochondrion: {value: 1.1, type: 'multiplicative'}, // Improves Mitochondrion output by 10%
-                },
+                production: [
+                    {building: 'mitochondrion', value: 1.1, type: 'multiplicative'}, // Improves Mitochondrion output by 10%
+                ],
                 lineage: 'metabolic',
             },
         },
@@ -238,7 +238,7 @@ CELL_STAGE_DATA = {
             count: 0,
             singlePurchase: true,
             effects: {
-                nutrientAbsorption: {value: 2, type: 'multiplicative'},
+                nutrientAbsorption: [{resource: 'nutrientAbsorption', value: 2, type: 'multiplicative'}],
                 lineage: 'metabolic',
             },
         },
@@ -281,10 +281,10 @@ CELL_STAGE_DATA = {
             count: 0,
             singlePurchase: false,
             effects: {
-                production: {
-                    nutrients: {value: 1, type: 'additive'}, // Generates 1 Nutrients per second
-                    waste: {value: -0.5, type: 'additive'}, // Consumes 0.5 Waste per second
-                },
+                production: [
+                    {resource: 'nutrients', value: 1, type: 'additive'}, // Generates 1 Nutrients per second
+                    {resource: 'waste', value: -0.5, type: 'additive'}, // Consumes 0.5 Waste per second
+                ],
                 lineage: 'saprotrophic',
             },
         },
@@ -298,9 +298,9 @@ CELL_STAGE_DATA = {
             count: 0,
             singlePurchase: true,
             effects: {
-                production: {
-                    extracellularDigestion: {value: 1.2, type: 'multiplicative'}, // Improves Extracellular Digestion output by 20%
-                },
+                production: [
+                    {building: 'extracellularDigestion', value: 1.2, type: 'multiplicative'}, // Improves Extracellular Digestion output by 20%
+                ],
                 lineage: 'saprotrophic',
             },
         },
@@ -329,12 +329,13 @@ CELL_STAGE_DATA = {
             display: false,
             purchased: false,
             effects: {
-                storage: {
-                    atp: {value: 2, type: 'multiplicative'}, // Doubles ATP storage capacity
-                    nutrients: {value: 2, type: 'multiplicative'}, // Doubles Nutrient storage capacity
-                    biomass: {value: 2, type: 'multiplicative'}, // Doubles Biomass storage capacity
-                    dna: {value: 2, type: 'multiplicative'}, // Doubles DNA storage capacity
-                },
+                storage: [
+                    {resource: 'atp', value: 2, type: 'multiplicative'}, // Doubles ATP storage capacity
+                    {resource: 'nutrients', value: 2, type: 'multiplicative'}, // Doubles Nutrient storage capacity
+                    {resource: 'biomass', value: 2, type: 'multiplicative'}, // Doubles Biomass storage capacity
+                    {resource: 'dna', value: 2, type: 'multiplicative'}, // Doubles DNA storage capacity
+                ],
+                targetBuilding: 'cellMembrane', // Specifies which building this upgrade affects
             },
         },
         // Surface Folds
@@ -346,7 +347,8 @@ CELL_STAGE_DATA = {
             display: false,
             purchased: false,
             effects: {
-                nutrientAbsorption: {value: 1, type: 'additive'}, // Increases nutrients absorbed per click
+                nutrientAbsorption: [{resource: 'nutrientAbsorption', value: 1, type: 'additive'}], // Increases nutrients absorbed per click
+                targetBuilding: 'surfaceFolds', // Specifies which building this upgrade affects
             },
         },
         enhancedTransport: {
@@ -357,7 +359,8 @@ CELL_STAGE_DATA = {
             display: false,
             purchased: false,
             effects: {
-                nutrientAbsorption: {value: 2, type: 'additive'}, // Increases nutrients absorbed per click
+                nutrientAbsorption: [{resource: 'nutrientAbsorption', value: 2, type: 'additive'}], // Increases nutrients absorbed per click
+                targetBuilding: 'surfaceFolds', // Specifies which building this upgrade affects
             },
         },
         // Ribosome
@@ -369,14 +372,8 @@ CELL_STAGE_DATA = {
             display: false,
             purchased: false,
             effects: {
-                modify: {
-                    ribosome: {
-                        // Modifies the Ribosome building effects
-                        production: {
-                            biomass: {value: 1, type: 'additive'}, // Increases Biomass generation by 1 per second
-                        },
-                    },
-                },
+                production: [{resource: 'biomass', value: 1, type: 'additive'}], // Increases Biomass generation by 1 per second
+                targetBuilding: 'ribosome', // Specifies which building this upgrade affects
             },
         },
         parallelSynthesis: {
@@ -387,14 +384,8 @@ CELL_STAGE_DATA = {
             display: false,
             purchased: false,
             effects: {
-                modify: {
-                    ribosome: {
-                        // Modifies the Ribosome building effects
-                        production: {
-                            atp: {value: 0.5, type: 'additive'}, // Reduces the ATP cost of Biomass generation by 0.5. Positive because it's a cost reduction
-                        },
-                    },
-                },
+                production: [{resource: 'atp', value: 0.5, type: 'additive'}], // Reduces the ATP cost of Biomass generation by 0.5. Positive because it's a cost reduction
+                targetBuilding: 'ribosome', // Specifies which building this upgrade affects
             },
         },
         structuralProteins: {
@@ -405,14 +396,8 @@ CELL_STAGE_DATA = {
             display: false,
             purchased: false,
             effects: {
-                modify: {
-                    ribosome: {
-                        // Modifies the Ribosome building effects
-                        storage: {
-                            biomass: {value: 25, type: 'additive'}, // Each Ribosome increases Biomass storage capacity by 25
-                        },
-                    },
-                },
+                storage: [{resource: 'biomass', value: 25, type: 'additive'}], // Each Ribosome increases Biomass storage capacity by 25
+                targetBuilding: 'ribosome', // Specifies which building this upgrade affects
             },
         },
         // Lysosome
@@ -424,9 +409,8 @@ CELL_STAGE_DATA = {
             display: false,
             purchased: false,
             effects: {
-                production: {
-                    atp: {value: 1, type: 'additive', condition: {type: 'excessBiomass'}}, // Generates 1 ATP per second when biomass is in excess
-                },
+                production: [{resource: 'atp', value: 1, type: 'additive', condition: {type: 'excessBiomass'}}], // Generates 1 ATP per second when biomass is in excess
+                targetBuilding: 'lysosome', // Specifies which building this upgrade affects
             },
         },
         selectiveBreakdown: {
@@ -437,44 +421,27 @@ CELL_STAGE_DATA = {
             display: false,
             purchased: false,
             effects: {
-                modify: {
-                    lysosome: {
-                        // Modifies the Lysosome building effects
-                        production: {
-                            waste: {value: -0.1, type: 'additive'}, // Lysosomes reduce Waste without consuming ATP
-                        },
-                    },
-                },
+                // Modifies the Lysosome building effects
+                wasteProduction: {value: 0, type: 'set'}, // Sets waste production to 0 (no ATP consumption)
+                targetBuilding: 'lysosome', // Specifies which building this upgrade affects
             },
         },
-        reclamation: {
-            name: 'Reclamation',
-            description: 'Enables lysosomes to convert reduced waste into DNA.',
-            defaultCost: {biomass: 250, dna: 125},
-            unlockCondition: {selectiveBreakdown: 1},
-            display: false,
-            purchased: false,
-            effects: {
-                production: {
-                    dna: {value: 0.02, type: 'additive'}, // Generates 0.02 DNA per second for every 1 Waste reduced
-                    waste: {value: -1, type: 'additive'}, // Condition to trigger DNA generation
-                },
-            },
-        },
+        // reclamation: {
+        //     name: 'Reclamation',
+        //     description: 'Enables lysosomes to convert reduced waste into DNA.',
+        //     defaultCost: {biomass: 250, dna: 125},
+        //     unlockCondition: {selectiveBreakdown: 1},
+        //     display: false,
+        //     purchased: false,
+        //     effects: {
+        //         production: {
+        //             dna: {value: 0.02, type: 'additive'}, // Generates 0.02 DNA per second for every 1 Waste reduced
+        //             waste: {value: -1, type: 'additive'}, // Condition to trigger DNA generation
+        //         },
+        //         targetBuilding: 'lysosome', // Specifies which building this upgrade affects
+        //     },
+        // },
         // Nucleus
-        // -   **Gene Duplication:**
-        //     -   _Cost:_ 200 Biomass, 75 DNA
-        //     -   _Unlock Condition:_ Requires Nucleus and DNA.
-        //     -   Increases the maximum DNA capacity by 50.
-        //     -   Increases DNA generation by 1 per second.
-        // -   **Epigenetics:**
-        //     -   _Cost:_ 250 Biomass, 100 DNA
-        //     -   _Unlock Condition:_ Requires Gene Duplication.
-        //     -   Each 50 Waste increases DNA generation by an additional 5%.
-        // -   **Genome Compression:**
-        //     -   _Cost:_ 300 Biomass, 150 DNA
-        //     -   _Unlock Condition:_ Requires Epigenetics.
-        //     -   Reduces DNA costs for all buildings and upgrades by 20%.
         geneDuplication: {
             name: 'Gene Duplication',
             description: 'Duplicates segments of DNA to enhance genetic capacity and production.',
@@ -483,17 +450,9 @@ CELL_STAGE_DATA = {
             display: false,
             purchased: false,
             effects: {
-                modify: {
-                    nucleus: {
-                        // Modifies the Nucleus building effects
-                        storage: {
-                            dna: {value: 50, type: 'additive'}, // Increases DNA storage capacity by 50
-                        },
-                        production: {
-                            dna: {value: 1, type: 'additive'}, // Increases DNA generation by 1 per second
-                        },
-                    },
-                },
+                storage: [{resource: 'dna', value: 50, type: 'additive'}], // Increases DNA storage capacity by 50
+                production: [{resource: 'dna', value: 1, type: 'additive'}], // Increases DNA generation by 1 per second
+                targetBuilding: 'nucleus', // Specifies which building this upgrade affects
             },
         },
         epigenetics: {
@@ -504,14 +463,8 @@ CELL_STAGE_DATA = {
             display: false,
             purchased: false,
             effects: {
-                modify: {
-                    nucleus: {
-                        // Modifies the Nucleus building effects
-                        production: {
-                            dna: {value: 0.05, type: 'multiplicative', condition: {type: 'wasteThreshold', threshold: 50}}, // Each 50 Waste increases DNA generation by 5%
-                        },
-                    },
-                },
+                production: [{resource: 'dna', value: 0.05, type: 'multiplicative', condition: {type: 'wasteThreshold', threshold: 50}}], // Each 50 Waste increases DNA generation by 5%
+                targetBuilding: 'nucleus', // Specifies which building this upgrade affects
             },
         },
         genomeCompression: {
@@ -522,14 +475,8 @@ CELL_STAGE_DATA = {
             display: false,
             purchased: false,
             effects: {
-                modify: {
-                    nucleus: {
-                        // Modifies the Nucleus building effects
-                        costReduction: {
-                            dna: {value: 0.2, type: 'multiplicative'}, // Reduces DNA costs by 20%
-                        },
-                    },
-                },
+                costReduction: [{resource: 'dna', value: 0.2, type: 'multiplicative'}], // Reduces DNA costs by 20%
+                targetBuilding: 'nucleus', // Specifies which building this upgrade affects
             },
         },
     },
