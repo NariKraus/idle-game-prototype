@@ -157,9 +157,7 @@ function runCellTests() {
 }
 
 function runDeltaTickTests() {
-    const gameState = deepClone(CELL_STAGE_DATA);
-    gameState.lastTick = 0;
-
+    // Shared classes for all delta tick tests
     class CellStage {
         constructor(data) {
             this._buildings = data.buildings;
@@ -262,8 +260,17 @@ function runDeltaTickTests() {
             });
             // Apply multiplicative effects
             effects.multiplicative.forEach((eff) => {
-                if (!totalProduction[eff.resource]) totalProduction[eff.resource] = 0;
-                totalProduction[eff.resource] *= eff.value;
+                if (eff.resource) {
+                    // Multiply a specific resource
+                    if (totalProduction[eff.resource]) {
+                        totalProduction[eff.resource] *= eff.value;
+                    }
+                } else {
+                    // Multiply all resources (building-wide effect)
+                    for (const res in totalProduction) {
+                        totalProduction[res] *= eff.value;
+                    }
+                }
             });
             // Apply set effects
             effects.set.forEach((eff) => {
@@ -306,8 +313,6 @@ function runDeltaTickTests() {
         }
     }
 
-    const cellStage = new CellStage(gameState);
-
     // Helper: Apply resource change with validation
     function applyResourceChange(resource, change) {
         const newAmount = resource.amount + change;
@@ -321,52 +326,107 @@ function runDeltaTickTests() {
         };
     }
 
-    function gameTick() {
-        const now = gameState.lastTick + 1000; // Simulate 1 second later
-        const deltaTime = (now - gameState.lastTick) / 1000;
-        gameState.lastTick = now;
+    // Helper: Run a game tick simulation
+    function createGameTickSimulator(gameState, cellStage) {
+        return function gameTick() {
+            const now = gameState.lastTick + 1000; // Simulate 1 second later
+            const deltaTime = (now - gameState.lastTick) / 1000;
+            gameState.lastTick = now;
 
-        // Resource generation logic
-        for (const [bldKey, bldData] of Object.entries(gameState.buildings)) {
-            if (bldData.count) {
-                // Use the cellStage's Building instance for effect calculations
-                const building = cellStage.buildings[bldKey];
-                const rate = building.resourceChangeRate;
-                for (const [resKey, resChange] of Object.entries(rate)) {
-                    const resource = gameState.resources[resKey];
-                    // Only update if resource exists
-                    if (resource && typeof resource.amount === 'number') {
-                        const totalChange = resChange * bldData.count * deltaTime;
-                        applyResourceChange(resource, totalChange);
+            // Resource generation logic
+            for (const [bldKey, bldData] of Object.entries(gameState.buildings)) {
+                if (bldData.count) {
+                    // Use the cellStage's Building instance for effect calculations
+                    const building = cellStage.buildings[bldKey];
+                    const rate = building.resourceChangeRate;
+                    for (const [resKey, resChange] of Object.entries(rate)) {
+                        const resource = gameState.resources[resKey];
+                        // Only update if resource exists
+                        if (resource && typeof resource.amount === 'number') {
+                            const totalChange = resChange * bldData.count * deltaTime;
+                            applyResourceChange(resource, totalChange);
+                        }
                     }
                 }
             }
-        }
+        };
     }
 
-    // Set up initial state on gameState, not cellStage
-    gameState.buildings.Mitochondrion.count = 1;
-    gameState.resources.nutrients.amount = 100;
-
-    gameTick();
-
-    const deltaTickTest = new TestCase('Delta Tick Resource Update Test');
-    deltaTickTest.test(
-        'Mitochondrion after 1 second',
-        () => {
-            let result = {};
-            for (const [resKey, resData] of Object.entries(gameState.resources)) {
-                result[resKey] = resData.amount;
-            }
-            return result;
+    // Test definitions
+    const tests = [
+        {
+            _id: 0,
+            name: 'Mitochondrion Basic Production',
+            setup: (gameState) => {
+                gameState.buildings.Mitochondrion.count = 1;
+                gameState.resources.nutrients.amount = 100;
+            },
+            expectedResources: {
+                atp: 4,
+                nutrients: 99,
+                biomass: 0.25,
+                waste: 0.1,
+            },
         },
         {
-            atp: 4,
-            nutrients: 99,
-            biomass: 0.25,
-            waste: 0.1,
-        }
-    );
+            _id: 1,
+            name: 'Chloroplast with ThylakoidMembrane 50% Boost',
+            setup: (gameState) => {
+                gameState.buildings.chloroplast.count = 1;
+                gameState.buildings.thylakoidMembrane.count = 1;
+                gameState.resources.nutrients.amount = 0;
+            },
+            expectedResources: {
+                atp: 0,
+                nutrients: 0.75, // 0.5 * 1.5 = 0.75
+                biomass: 0,
+                waste: 0.15, // 0.1 + 0.05
+            },
+        },
+        {
+            _id: 2,
+            name: 'Chloroplast without ThylakoidMembrane',
+            setup: (gameState) => {
+                gameState.buildings.chloroplast.count = 1;
+                gameState.resources.nutrients.amount = 0;
+            },
+            expectedResources: {
+                atp: 0,
+                nutrients: 0.5, // Base chloroplast production
+                biomass: 0,
+                waste: 0.1,
+            },
+        },
+    ];
+
+    const deltaTickTest = new TestCase('Delta Tick Resource Update Tests');
+
+    // Run each test
+    tests.forEach((test) => {
+        const gameState = deepClone(CELL_STAGE_DATA);
+        gameState.lastTick = 0;
+        const cellStage = new CellStage(gameState);
+        const gameTick = createGameTickSimulator(gameState, cellStage);
+
+        // Apply test setup
+        test.setup(gameState);
+
+        // Run one tick
+        gameTick();
+
+        // Verify results
+        deltaTickTest.test(
+            `${test._id}: ${test.name}`,
+            () => {
+                let result = {};
+                for (const [resKey, resData] of Object.entries(gameState.resources)) {
+                    result[resKey] = resData.amount;
+                }
+                return result;
+            },
+            test.expectedResources
+        );
+    });
 
     deltaTickTest.runAll();
 }
