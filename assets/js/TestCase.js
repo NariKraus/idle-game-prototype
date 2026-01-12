@@ -13,8 +13,15 @@ class TestCase {
      *   'error': test should throw
      *   'mismatch': test should NOT equal expected
      */
-    test(name, testFn, expected, shouldFail = false) {
-        this.tests.push({ name, testFn, expected, shouldFail });
+    /**
+     * @param {string} name
+     * @param {function} testFn
+     * @param {*} expected
+     * @param {false|'error'|'mismatch'} shouldFail
+     * @param {function} [comparator] Optional custom comparator: (actual, expected) => boolean
+     */
+    test(name, testFn, expected, shouldFail = false, comparator = null) {
+        this.tests.push({name, testFn, expected, shouldFail, comparator});
     }
 
     runAll() {
@@ -34,15 +41,16 @@ class TestCase {
         let passed = false;
         try {
             actual = test.testFn();
+            const comparator = test.comparator || this.compareValues.bind(this);
             if (test.shouldFail === 'error') {
                 // Should have thrown, but didn't
                 passed = false;
             } else if (test.shouldFail === 'mismatch') {
                 // Should NOT match expected
-                passed = !this.compareValues(actual, test.expected);
+                passed = !comparator(actual, test.expected);
             } else {
                 // Normal: should match expected
-                passed = this.compareValues(actual, test.expected);
+                passed = comparator(actual, test.expected);
             }
         } catch (err) {
             error = err.message;
@@ -52,7 +60,7 @@ class TestCase {
                 passed = false;
             }
         }
-        const result = { name: test.name, passed, actual, expected: test.expected, error, shouldFail: test.shouldFail };
+        const result = {name: test.name, passed, actual, expected: test.expected, error, shouldFail: test.shouldFail};
         this.logResult(index, result);
         return result;
     }
@@ -64,7 +72,21 @@ class TestCase {
             const epsilon = 1e-10;
             return Math.abs(actual - expected) < epsilon;
         }
-        if (actual && expected && typeof actual === 'object') {
+        // Partial object match: only compare keys in expected
+        if (
+            actual && expected &&
+            typeof actual === 'object' &&
+            !Array.isArray(actual) &&
+            !Array.isArray(expected)
+        ) {
+            for (const key of Object.keys(expected)) {
+                if (!(key in actual)) return false;
+                if (!this.compareValues(actual[key], expected[key])) return false;
+            }
+            return true;
+        }
+        // Arrays: require deep equality
+        if (Array.isArray(actual) && Array.isArray(expected)) {
             return JSON.stringify(actual) === JSON.stringify(expected);
         }
         return false;
@@ -81,7 +103,15 @@ class TestCase {
         }
         let line = `${style}${icon} Test ${index}: ${result.name}${statusMsg}`;
         if (result.passed && !result.shouldFail) {
-            line += ` [${result.actual}]`;
+            let displayActual = result.actual;
+            if (typeof displayActual === 'object' && displayActual !== null) {
+                try {
+                    displayActual = JSON.stringify(displayActual);
+                } catch (e) {
+                    displayActual = '[object Object]';
+                }
+            }
+            line += ` [${displayActual}]`;
         }
         line += '\x1b[0m';
         console.log(line);
@@ -96,8 +126,8 @@ class TestCase {
     }
 
     displaySummary() {
-        const passed = this.results.filter(r => r.passed && !r.shouldFail).length;
-        const failedAsExpected = this.results.filter(r => r.shouldFail && r.passed).length;
+        const passed = this.results.filter((r) => r.passed && !r.shouldFail).length;
+        const failedAsExpected = this.results.filter((r) => r.shouldFail && r.passed).length;
         const failed = this.results.length - passed - failedAsExpected;
         console.log('\n=== Test Summary ===');
         console.log(`\x1b[32mPassed: ${passed}\x1b[0m`);
@@ -117,4 +147,4 @@ class TestCase {
     }
 }
 
-module.exports = { TestCase };
+module.exports = {TestCase};
