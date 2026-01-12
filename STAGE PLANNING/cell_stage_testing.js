@@ -313,11 +313,11 @@ function runDeltaTickTests() {
         const newAmount = resource.amount + change;
         // Clamp between 0 and max capacity
         resource.amount = Math.max(0, Math.min(newAmount, resource.max));
-        
+
         // Optional: Return whether we hit a boundary (useful for detecting bottlenecks)
         return {
             capped: newAmount > resource.max,
-            depleted: newAmount < 0
+            depleted: newAmount < 0,
         };
     }
 
@@ -350,15 +350,23 @@ function runDeltaTickTests() {
 
     gameTick();
 
-    /**
-     * Nutrients -> 99
-     * ATP -> 4
-     * Biomass -> 0.25
-     * Waste -> 0.1
-     *  */
-    // Print the updated resource amounts
-    const resourceAmounts = Object.fromEntries(
-        Object.entries(gameState.resources).map(([k, v]) => [k, v.amount])
+    const deltaTickTest = new TestCase('Delta Tick Resource Update Test');
+    deltaTickTest.test(
+        'Mitochondrion after 1 second',
+        () => {
+            let result = {};
+            for (const [resKey, resData] of Object.entries(gameState.resources)) {
+                result[resKey] = resData.amount;
+            }
+            return result;
+        },
+        {
+            atp: 4,
+            nutrients: 99,
+            biomass: 0.25,
+            waste: 0.1,
+        }
     );
-    console.log('Post-tick Resources:', resourceAmounts);
+
+    deltaTickTest.runAll();
 }
