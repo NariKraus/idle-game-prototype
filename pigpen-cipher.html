@@ -1,0 +1,267 @@
+<style>
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        padding: 20px;
+    }
+</style>
+
+<body>
+    <div style="margin-bottom: 12px">
+        <input id="pigpen-input" type="text" value="Cubes are square" style="width: 300px; font-size: 16px" />
+    </div>
+    <main></main>
+    <!-- Pigpen Help Modal -->
+    <div id="pigpen-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.7); z-index: 1000; align-items: center; justify-content: center">
+        <div style="background: #fff; padding: 32px; border-radius: 12px; max-width: 900px; max-height: 90vh; overflow: auto; box-shadow: 0 2px 16px #0004">
+            <h2>Pigpen Cipher Reference</h2>
+            <div id="pigpen-grid"></div>
+            <hr />
+            <h3>Letter Comparison</h3>
+            <div id="pigpen-comparison"></div>
+            <button id="close-pigpen-modal" style="margin-top: 24px; font-size: 18px">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // SVG path data for Pigpen Cipher symbols
+        const bl = 'M2 22h20';
+        const tl = 'M2 2h20';
+        const ll = 'M2 2v20';
+        const rl = 'M22 2v20';
+
+        const dot = 'M12 12a1 1 0 1 0 0.00001 0'; // A simple dot at the center
+
+        // V Shapes
+        const bv = 'M2 22L12 2L22 22';
+        const bvd = 'M12 16a1 1 0 1 0 0.00001 0';
+
+        const tv = 'M2 2L12 22L22 2';
+        const tvd = 'M12 8a1 1 0 1 0 0.00001 0';
+
+        const rv = 'M22 2L2 12L22 22';
+        const rvd = 'M16 12a1 1 0 1 0 0.00001 0';
+
+        const lv = 'M2 2L22 12L2 22';
+        const lvd = 'M8 12a1 1 0 1 0 0.00001 0';
+
+        const letters = new Map([
+            ['a', [bl, rl]],
+            ['b', [bl, rl, ll]],
+            ['c', [bl, ll]],
+            ['d', [bl, rl, tl]],
+            ['e', [bl, tl, rl, ll]],
+            ['f', [bl, tl, ll]],
+            ['g', [tl, rl]],
+            ['h', [tl, rl, ll]],
+            ['i', [tl, ll]],
+
+            ['j', [bl, rl, dot]],
+            ['k', [bl, rl, ll, dot]],
+            ['l', [bl, ll, dot]],
+            ['m', [bl, rl, tl, dot]],
+            ['n', [bl, tl, rl, ll, dot]],
+            ['o', [bl, tl, ll, dot]],
+            ['p', [tl, rl, dot]],
+            ['q', [tl, rl, ll, dot]],
+            ['r', [tl, ll, dot]],
+
+            ['s', [tv]],
+            ['t', [lv]],
+            ['u', [rv]],
+            ['v', [bv]],
+
+            ['w', [tv, tvd]],
+            ['x', [lv, lvd]],
+            ['y', [rv, rvd]],
+            ['z', [bv, bvd]],
+        ]);
+
+        const main = document.querySelector('main');
+        main.style.display = 'flex';
+        main.style.flexDirection = 'row';
+        main.style.gap = '16px';
+
+        // Modal functions - defined once at the global scope
+        function renderPigpenModal() {
+            const grid = document.getElementById('pigpen-grid');
+            grid.innerHTML = '';
+            grid.style.display = 'flex';
+            grid.style.flexDirection = 'column';
+            grid.style.gap = '12px';
+
+            function gridRow(chars) {
+                const row = document.createElement('div');
+                row.style.display = 'flex';
+                row.style.gap = '8px';
+                chars.forEach((char) => {
+                    row.appendChild(createSVGWithLabel(letters.get(char), char, 40, false));
+                });
+                return row;
+            }
+
+            grid.appendChild(gridRow(['a', 'b', 'c']));
+            grid.appendChild(gridRow(['d', 'e', 'f']));
+            grid.appendChild(gridRow(['g', 'h', 'i']));
+            grid.appendChild(document.createElement('hr'));
+            grid.appendChild(gridRow(['j', 'k', 'l']));
+            grid.appendChild(gridRow(['m', 'n', 'o']));
+            grid.appendChild(gridRow(['p', 'q', 'r']));
+            grid.appendChild(document.createElement('hr'));
+            
+            // Diamond arrangement for V shapes - tighter spacing
+            const diamondContainer = document.createElement('div');
+            diamondContainer.style.display = 'flex';
+            diamondContainer.style.gap = '32px';
+            diamondContainer.style.justifyContent = 'center';
+            
+            const diamond1 = document.createElement('div');
+            diamond1.style.display = 'flex';
+            diamond1.style.flexDirection = 'column';
+            diamond1.style.alignItems = 'center';
+            diamond1.style.gap = '4px';
+            diamond1.appendChild(gridRow(['s']));
+            diamond1.appendChild(gridRow(['t', 'u']));
+            diamond1.appendChild(gridRow(['v']));
+            diamondContainer.appendChild(diamond1);
+            
+            const diamond2 = document.createElement('div');
+            diamond2.style.display = 'flex';
+            diamond2.style.flexDirection = 'column';
+            diamond2.style.alignItems = 'center';
+            diamond2.style.gap = '4px';
+            diamond2.appendChild(gridRow(['w']));
+            diamond2.appendChild(gridRow(['x', 'y']));
+            diamond2.appendChild(gridRow(['z']));
+            diamondContainer.appendChild(diamond2);
+            
+            grid.appendChild(diamondContainer);
+        }
+
+        function renderPigpenComparison() {
+            const cmp = document.getElementById('pigpen-comparison');
+            cmp.innerHTML = '';
+            cmp.style.display = 'flex';
+            cmp.style.flexWrap = 'wrap';
+            cmp.style.gap = '12px';
+            'abcdefghijklmnopqrstuvwxyz'.split('').forEach((char) => {
+                const box = document.createElement('div');
+                box.style.display = 'flex';
+                box.style.flexDirection = 'column';
+                box.style.alignItems = 'center';
+                box.appendChild(createSVGWithLabel(letters.get(char), char, 32, false));
+                const label = document.createElement('span');
+                label.textContent = char;
+                label.style.fontSize = '16px';
+                label.style.marginTop = '2px';
+                box.appendChild(label);
+                cmp.appendChild(box);
+            });
+        }
+
+        let modalOpen = false;
+        function openModal() {
+            renderPigpenModal();
+            renderPigpenComparison();
+            document.getElementById('pigpen-modal').style.display = 'flex';
+            modalOpen = true;
+        }
+
+        function closeModal() {
+            document.getElementById('pigpen-modal').style.display = 'none';
+            modalOpen = false;
+        }
+
+        function createSVGWithLabel(paths, letter, size = 32, showLabel = true) {
+            const svgns = 'http://www.w3.org/2000/svg';
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.alignItems = 'center';
+            container.style.width = size + 'px';
+
+            if (paths) {
+                const svg = document.createElementNS(svgns, 'svg');
+                svg.setAttribute('viewBox', '0 0 24 24');
+                svg.setAttribute('width', size);
+                svg.setAttribute('height', size);
+                paths.forEach((d) => {
+                    const path = document.createElementNS(svgns, 'path');
+                    path.setAttribute('d', d);
+                    path.setAttribute('stroke', 'black');
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('stroke-width', '2');
+                    svg.appendChild(path);
+                });
+                container.appendChild(svg);
+                if (showLabel) {
+                    const label = document.createElement('span');
+                    label.textContent = letter;
+                    label.style.fontSize = '16px';
+                    label.style.marginTop = '2px';
+                    container.appendChild(label);
+                }
+            } else {
+                // Non-pigpen character: render large and small
+                const big = document.createElement('span');
+                big.textContent = letter;
+                big.style.fontSize = size + 'px';
+                big.style.fontWeight = 'bold';
+                big.style.lineHeight = size + 'px';
+                big.style.height = size + 'px';
+                big.style.display = 'block';
+                container.appendChild(big);
+                if (showLabel) {
+                    const small = document.createElement('span');
+                    small.textContent = letter;
+                    small.style.fontSize = '14px';
+                    small.style.marginTop = '2px';
+                    small.style.opacity = '0.6';
+                    container.appendChild(small);
+                }
+            }
+            return container;
+        }
+
+        function renderPigpen(text) {
+            main.innerHTML = '';
+            const words = text.toLowerCase().split(/\s+/);
+            words.forEach((word, wordIdx) => {
+                const wordContainer = document.createElement('div');
+                wordContainer.style.display = 'flex';
+                wordContainer.style.flexDirection = 'row';
+                wordContainer.style.gap = '2px';
+                word.split('').forEach((char) => {
+                    const paths = letters.get(char);
+                    if (paths) {
+                        wordContainer.appendChild(createSVGWithLabel(paths, char));
+                    }
+                });
+                main.appendChild(wordContainer);
+                if (wordIdx < words.length - 1) {
+                    const spacer = document.createElement('div');
+                    spacer.style.width = '24px';
+                    main.appendChild(spacer);
+                }
+            });
+        }
+
+        // Initialize modal event listeners once
+        document.getElementById('close-pigpen-modal').onclick = closeModal;
+        const inputBox = document.getElementById('pigpen-input');
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'h' && document.activeElement !== inputBox && !modalOpen) {
+                openModal();
+            } else if (e.key === 'Escape' && modalOpen) {
+                closeModal();
+            }
+        });
+
+        // Render initial text and set up input listener
+        const input = document.getElementById('pigpen-input');
+        renderPigpen(input.value);
+        input.addEventListener('input', (e) => {
+            renderPigpen(e.target.value);
+        });
+    </script>
+</body>
