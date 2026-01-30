@@ -10,14 +10,14 @@ The Cell Stage represents the primordial beginning of life, where players guide 
 
 ### Core Resources
 
-| Resource          | Purpose                                                                  | Starting Amount |
-| ----------------- | ------------------------------------------------------------------------ | --------------- |
-| **ATP**           | Primary energy currency for all actions and purchases                    | 10              |
-| **Nutrients**     | Raw material absorbed from the environment, converted to other resources | 5               |
-| **Biomass**       | Building material for constructing organelles and structures             | 0               |
-| **DNA**           | Research currency for unlocking upgrades and evolution paths             | 0               |
-| **Waste**         | Metabolic byproduct that damages Cell Stability                          | 0               |
-| **Cell Stability**| Health/integrity of your cell; low values cause production penalties     | 100%            |
+| Resource           | Purpose                                                                  | Starting Amount |
+| ------------------ | ------------------------------------------------------------------------ | --------------- |
+| **ATP**            | Primary energy currency for all actions and purchases                    | 10              |
+| **Nutrients**      | Raw material absorbed from the environment, converted to other resources | 5               |
+| **Biomass**        | Building material for constructing organelles and structures             | 0               |
+| **DNA**            | Research currency for unlocking upgrades and evolution paths             | 0               |
+| **Waste**          | Metabolic byproduct that damages Cell Stability                          | 0               |
+| **Cell Stability** | Health/integrity of your cell; low values cause production penalties     | 100%            |
 
 ### Notes
 
@@ -100,6 +100,13 @@ The Cell Stage represents the primordial beginning of life, where players guide 
 - Absorption efficiency bonus uses diminishing returns: `10% × (1 - 0.95^count)` — approaches 200% asymptotically.
 - Also provides **+0.5% Stability regeneration per second** per membrane (additive).
 
+```javascript
+[1, 5, 10, 20].forEach((c) => {
+    let efficiencyBonus = 10 * (1 - Math.pow(0.95, c));
+    console.log(`Cell Membranes: ${c}, Absorption Efficiency Bonus: ${efficiencyBonus.toFixed(2)}%`);
+});
+```
+
 ### Mitochondria
 
 - _Default Cost:_ 8 Biomass, 5 ATP
@@ -149,10 +156,17 @@ The Cell Stage represents the primordial beginning of life, where players guide 
 - _Unlock Condition:_ Own at least 3 Ribosomes
 - Increases **Biomass capacity by +50**.
 - Reduces Biomass costs of all organelles with diminishing returns: `1 - (1 / (1 + 0.08 × count))`
-  - 1 Cytoskeleton: ~7.4% reduction
-  - 5 Cytoskeletons: ~28.6% reduction
-  - 10 Cytoskeletons: ~44.4% reduction
-  - Approaches 100% asymptotically but never reaches it.
+    - 1 Cytoskeleton: ~7.4% reduction
+    - 5 Cytoskeletons: ~28.6% reduction
+    - 10 Cytoskeletons: ~44.4% reduction
+    - Approaches 100% asymptotically but never reaches it.
+
+```javascript
+[1, 5, 10].forEach((c) => {
+    let reduction = 1 - 1 / (1 + 0.08 * c);
+    console.log(`Cytoskeletons: ${c}, Cost Reduction: ${(reduction * 100).toFixed(2)}%`);
+});
+```
 
 ### Endoplasmic Reticulum
 
@@ -262,9 +276,16 @@ The Cell Stage represents the primordial beginning of life, where players guide 
     - _Waste Production:_ 0.2 per second
     - **Cell Stability is no longer damaged by Waste** (neutralizes the penalty).
     - Gain passive DNA based on Waste: `0.05 × sqrt(Waste / 100)` DNA per second.
-      - At 100 Waste: 0.05 DNA/sec
-      - At 400 Waste: 0.1 DNA/sec
-      - At 900 Waste: 0.15 DNA/sec
+        - At 100 Waste: 0.05 DNA/sec
+        - At 400 Waste: 0.1 DNA/sec
+        - At 900 Waste: 0.15 DNA/sec
+
+    - ```js
+      [100, 400, 900].forEach((w) => {
+          let dnaPerSec = 0.05 * Math.sqrt(w / 100);
+          console.log(`Waste: ${w}, DNA/sec: ${dnaPerSec.toFixed(3)}`);
+      });
+      ```
 
 2. **Spore Sac**
     - _Cost:_ 200 Biomass, 60 ATP, 50 DNA
@@ -276,13 +297,19 @@ The Cell Stage represents the primordial beginning of life, where players guide 
     - _Cost:_ 400 Biomass, 120 ATP, 200 DNA
     - _Waste Production:_ 0.5 per second
     - All organelles have their effects increased based on Waste: `100 × (1 - 1/(1 + Waste/200))%`
-      - At 100 Waste: +33% effects
-      - At 200 Waste: +50% effects
-      - At 500 Waste: +71% effects
-      - At 1000 Waste: +83% effects (continues scaling infinitely with diminishing returns)
+        - At 100 Waste: +33% effects
+        - At 200 Waste: +50% effects
+        - At 500 Waste: +71% effects
+        - At 1000 Waste: +83% effects (continues scaling infinitely with diminishing returns)
     - Lysosomes and Peroxisomes now generate **0.1 DNA per second** each.
     - Unlocks **Cellular Differentiation** → Progress to Fungal Stage.
     - Future Bonus: Fungi start with the ability to decompose defeated enemies for extra resources.
+    - ```js
+      [100, 200, 500, 1000].forEach((w) => {
+          let effectBonus = 100 * (1 - 1 / (1 + w / 200));
+          console.log(`Waste: ${w}, Effect Bonus: ${effectBonus.toFixed(2)}%`);
+      });
+      ```
 
 ---
 
@@ -403,6 +430,36 @@ The Cell Stage represents the primordial beginning of life, where players guide 
 
 ## Extra Notes
 
+### Building Toggles
+
+Players can **enable or disable** organelle types to manage resource flow and Waste production.
+
+**Toggle Rules:**
+- Toggles work at the **collective level** (per building type, not individual buildings)
+- One toggle controls all buildings of that type (e.g., "Mitochondria: ON/OFF")
+- Toggling is **instant** with no cost or cooldown
+
+**When Disabled:**
+- Building stops all production (resources and Waste)
+- Building still counts toward unlock requirements
+- Building still contributes to capacity bonuses (storage, etc.)
+- Visually grayed out in the UI
+
+**Cannot Be Disabled:**
+- **Nucleus** — Core progression building, always active
+- **Cell Membrane** — Fundamental structure, always active
+
+**Strategic Uses:**
+| Situation | Action |
+|-----------|--------|
+| Stability crisis | Disable high-Waste producers (Mitochondria, ER) to recover |
+| Nutrient shortage | Disable Ribosomes to stop draining Nutrients |
+| Mycozoa Waste farming | Disable Lysosomes/Peroxisomes to let Waste climb |
+| ATP capped | Disable Mitochondria to reduce unnecessary Waste |
+| Mutation hunting | Enable everything, ride high Waste for DNA |
+
+---
+
 ### Waste & Cell Stability
 
 **Waste Generation:**
@@ -421,25 +478,26 @@ Stability Damage = sqrt(Waste) × 0.1% per second
 ```
 
 | Waste | Stability Damage/sec | Net Change (base regen) |
-|-------|---------------------|-------------------------|
-| 0     | 0%                  | +1.5%/sec               |
-| 100   | 1.0%                | +0.5%/sec               |
-| 225   | 1.5%                | ±0%/sec (breakeven)     |
-| 400   | 2.0%                | -0.5%/sec               |
-| 625   | 2.5%                | -1.0%/sec               |
-| 900   | 3.0%                | -1.5%/sec               |
+| ----- | -------------------- | ----------------------- |
+| 0     | 0%                   | +1.5%/sec               |
+| 100   | 1.0%                 | +0.5%/sec               |
+| 225   | 1.5%                 | ±0%/sec (breakeven)     |
+| 400   | 2.0%                 | -0.5%/sec               |
+| 625   | 2.5%                 | -1.0%/sec               |
+| 900   | 3.0%                 | -1.5%/sec               |
 
 **Stability Thresholds:**
 
-| Stability   | Effect                                                                 |
-|-------------|------------------------------------------------------------------------|
-| 100% - 75%  | No penalty — cell is healthy                                           |
-| 74% - 50%   | **Strained** — All production reduced by 25%                           |
-| 49% - 25%   | **Critical** — All production reduced by 50%, mutations always negative|
-| 24% - 1%    | **Failing** — All production reduced by 75%, organelles randomly pause |
-| 0%          | **Crisis State** — Production stops, must manually click to recover    |
+| Stability  | Effect                                                                  |
+| ---------- | ----------------------------------------------------------------------- |
+| 100% - 75% | No penalty — cell is healthy                                            |
+| 74% - 50%  | **Strained** — All production reduced by 25%                            |
+| 49% - 25%  | **Critical** — All production reduced by 50%, mutations always negative |
+| 24% - 1%   | **Failing** — All production reduced by 75%, organelles randomly pause  |
+| 0%         | **Crisis State** — Production stops, must manually click to recover     |
 
 **Crisis State (0% Stability):**
+
 - All passive generation stops completely
 - Manual actions still work (at 50% efficiency)
 - Waste continues to accumulate but Stability cannot go below 0%
@@ -610,9 +668,9 @@ Final Cost = Scaled Cost × Cost Reduction Multiplier
 - **Mutation farming:** Intentionally let Waste rise for more DNA, accept Stability risk
 - **Stability dancing:** Push Waste high, ride the Strained/Critical thresholds, purge before Crisis
 - **Path synergies:** Each evolution path rewards different playstyles
-  - Animalculus: High throughput offsets Stability penalties
-  - Phytozoa: Reduced Waste generation keeps Stability healthy
-  - Mycozoa: Ignores Stability damage, freely scales Waste for bonuses
+    - Animalculus: High throughput offsets Stability penalties
+    - Phytozoa: Reduced Waste generation keeps Stability healthy
+    - Mycozoa: Ignores Stability damage, freely scales Waste for bonuses
 
 ---
 
