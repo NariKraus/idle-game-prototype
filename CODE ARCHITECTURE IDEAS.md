@@ -1427,18 +1427,18 @@ Best for TypeScript projects with complex state management.
 
 ```
 src/
-├── definitions/           # Static game data (you write these)
-│   ├── buildings.ts
-│   ├── upgrades.ts
-│   ├── mutations.ts
-│   └── index.ts          # Re-exports everything
 ├── core/                  # Game engine (the systems)
-│   ├── types.ts          # All interfaces
 │   ├── Game.ts           # Main game controller
 │   ├── GameLoop.ts       # Fixed timestep loop
 │   ├── GameState.ts      # State wrapper with helpers
 │   ├── ModifierRegistry.ts
-│   └── SaveManager.ts
+│   ├── SaveManager.ts
+│   └── types.ts          # All interfaces
+├── definitions/           # Static game data (you write these)
+│   ├── buildings.ts
+│   ├── index.ts          # Re-exports everything
+│   ├── mutations.ts
+│   └── upgrades.ts
 ├── stages/                # Stage-specific logic
 │   ├── CellStage.ts
 │   └── ...
