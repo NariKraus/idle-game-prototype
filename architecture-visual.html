@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Game Architecture Visualizer</title>
+        <style>
+            body {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                margin: 0;
+                padding: 20px;
+            }
+            .container {
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+            h1 {
+                text-align: center;
+                color: white;
+                font-weight: 300;
+                margin-bottom: 10px;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            }
+            .subtitle {
+                text-align: center;
+                color: rgba(255,255,255,0.8);
+                font-size: 14px;
+                margin-bottom: 20px;
+            }
+            #canvas {
+                background: #fff;
+                border-radius: 8px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                display: block;
+                margin: 0 auto;
+                cursor: grab;
+            }
+            #canvas:active {
+                cursor: grabbing;
+            }
+            #tooltip {
+                position: absolute;
+                background: rgba(0,0,0,0.9);
+                color: white;
+                padding: 12px 16px;
+                border-radius: 6px;
+                font-size: 13px;
+                pointer-events: none;
+                display: none;
+                max-width: 300px;
+                line-height: 1.6;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            }
+            .legend {
+                display: flex;
+                justify-content: center;
+                gap: 20px;
+                margin-top: 20px;
+                flex-wrap: wrap;
+            }
+            .legend-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: white;
+                font-size: 13px;
+            }
+            .legend-color {
+                width: 20px;
+                height: 20px;
+                border-radius: 4px;
+                border: 2px solid rgba(255,255,255,0.3);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Game Architecture Visualizer</h1>
+            <p class="subtitle">Interactive diagram showing how all systems connect • Hover over nodes for details</p>
+            <canvas id="canvas" width="1400" height="800"></canvas>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #dae8fc;"></div>
+                    <span>Definitions (Static)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #d5e8d4;"></div>
+                    <span>Game State</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #fff2cc;"></div>
+                    <span>Core Systems</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f8cecc;"></div>
+                    <span>Modifiers</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e1d5e7;"></div>
+                    <span>Calculations</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffe6cc;"></div>
+                    <span>UI/Storage</span>
+                </div>
+            </div>
+        </div>
+        <div id="tooltip"></div>
+        <script>
+            // Enhanced data-driven architecture with tooltips and colors
+            const nodes = [
+                // Definitions (separated)
+                {
+                    id: 'buildingDef', 
+                    label: 'BuildingDef', 
+                    sublabel: 'Building definitions',
+                    x: 50, y: 80, 
+                    color: '#dae8fc',
+                    tooltip: 'Defines building properties:\\n• id, name, description\\n• baseCost, costScaling\\n• effects (production, capacity, conversion)\\n• unlockCondition, canDisable'
+                },
+                {
+                    id: 'upgradeDef', 
+                    label: 'UpgradeDef', 
+                    sublabel: 'Upgrade definitions',
+                    x: 50, y: 180, 
+                    color: '#dae8fc',
+                    tooltip: 'Defines purchasable upgrades:\\n• id, name, description\\n• cost\\n• modifiers (created on purchase)\\n• unlockCondition'
+                },
+                {
+                    id: 'mutationDef', 
+                    label: 'MutationDef', 
+                    sublabel: 'Mutation definitions',
+                    x: 50, y: 280, 
+                    color: '#dae8fc',
+                    tooltip: 'Defines random mutations:\\n• id, name, description\\n• duration, isPositive\\n• modifiers (temporary effects)\\n• instantEffects (one-time)\\n• baseDnaReward'
+                },
+                {
+                    id: 'evoDef', 
+                    label: 'EvolutionOrganelleDef', 
+                    sublabel: 'Evolution options',
+                    x: 50, y: 380, 
+                    color: '#dae8fc',
+                    tooltip: 'Evolution organelles:\\n• id, name, description\\n• lineage restriction\\n• cost, unlockCondition\\n• modifiers (permanent)'
+                },
+                {
+                    id: 'effects', 
+                    label: 'Effects', 
+                    sublabel: 'Building effects types',
+                    x: 50, y: 480, 
+                    color: '#dae8fc',
+                    tooltip: 'Effect types used by buildings:\\n• ProductionEffect (generates resources)\\n• CapacityEffect (increases storage)\\n• ConversionEffect (transforms resources)\\n• ModifierEffect (grants modifiers)'
+                },
+                
+                // Core systems
+                {
+                    id: 'gameState', 
+                    label: 'GameState', 
+                    sublabel: 'Runtime game state',
+                    x: 400, y: 250, 
+                    color: '#d5e8d4',
+                    tooltip: 'Dynamic game state:\\n• resources (atp, nutrients, biomass, dna, etc.)\\n• buildings (counts per type)\\n• buildingsEnabled (on/off states)\\n• upgrades (purchased IDs)\\n• stats (achievements, totals)\\n• meta (lineage, traits, evoPoints)'
+                },
+                {
+                    id: 'gameLoop', 
+                    label: 'GameLoop', 
+                    sublabel: 'Fixed timestep loop',
+                    x: 750, y: 150, 
+                    color: '#fff2cc',
+                    tooltip: 'Main game loop (20 ticks/sec):\\n• tick(delta) - advances game\\n• processConversions() - resource transforms\\n• checkMutations() - random events\\n• Reads GameState & Definitions\\n• Queries ModifierRegistry\\n• Triggers Calculations'
+                },
+                {
+                    id: 'modifierRegistry', 
+                    label: 'ModifierRegistry', 
+                    sublabel: 'Active modifier storage',
+                    x: 1100, y: 250, 
+                    color: '#f8cecc',
+                    tooltip: 'Stores and calculates modifiers:\\n• Map of active modifiers\\n• calculate(target, base, state)\\n• Formula: (base + flat) × (1 + %) × mult\\n• Layers: flat, percent, multiplier, override\\n• tick() removes expired modifiers'
+                },
+                
+                // Secondary systems
+                {
+                    id: 'calculations', 
+                    label: 'Calculations', 
+                    sublabel: 'Production & rates',
+                    x: 750, y: 450, 
+                    color: '#e1d5e7',
+                    tooltip: 'Calculates final values:\\n• Production rates (per resource)\\n• Conversion efficiency\\n• Modified by ModifierRegistry\\n• Called every game tick'
+                },
+                {
+                    id: 'saveFile', 
+                    label: 'SaveFile', 
+                    sublabel: 'Persistence layer',
+                    x: 400, y: 450, 
+                    color: '#ffe6cc',
+                    tooltip: 'Saves/loads GameState:\\n• version (for migration)\\n• lastSaved (timestamp)\\n• currentStage\\n• meta (persistent across stages)\\n• stages (per-stage saves)\\nDoes NOT save Definitions or Modifiers'
+                },
+                {
+                    id: 'offlineCalc', 
+                    label: 'Offline Calculator', 
+                    sublabel: 'Offline progress',
+                    x: 400, y: 600, 
+                    color: '#ffe6cc',
+                    tooltip: 'Calculates offline gains:\\n• Tiered efficiency (100% → 25%)\\n• Max 24 hours\\n• Uses GameState rates\\n• Applies on load'
+                },
+                {
+                    id: 'ui', 
+                    label: 'UI / Render', 
+                    sublabel: 'Display layer',
+                    x: 1100, y: 450, 
+                    color: '#ffe6cc',
+                    tooltip: 'Displays game to player:\\n• Reads GameState\\n• Updates every frame\\n• Shows resources, buildings, upgrades\\n• Handles user input'
+                },
+            ];
+
+            const links = [
+                // Definitions to GameState
+                {from: 'buildingDef', to: 'gameState', label: 'referenced by', curve: 0.2},
+                {from: 'upgradeDef', to: 'gameState', label: 'referenced by', curve: 0.15},
+                {from: 'mutationDef', to: 'gameState', label: 'referenced by', curve: 0.1},
+                {from: 'evoDef', to: 'gameState', label: 'referenced by', curve: 0.05},
+                {from: 'effects', to: 'buildingDef', label: 'used by', curve: 0},
+
+                // Modifiers creation (definitions create modifiers)
+                {from: 'upgradeDef', to: 'modifierRegistry', label: 'creates mods', curve: 0.3, dashed: true},
+                {from: 'mutationDef', to: 'modifierRegistry', label: 'creates mods', curve: 0.2, dashed: true},
+                {from: 'evoDef', to: 'modifierRegistry', label: 'creates mods', curve: 0.1, dashed: true},
+
+                // GameLoop reads/writes GameState
+                {from: 'gameLoop', to: 'gameState', label: 'writes', curve: -0.2},
+                {from: 'gameState', to: 'gameLoop', label: 'reads', curve: 0.2},
+
+                // GameLoop triggers calculations
+                {from: 'gameLoop', to: 'calculations', label: 'triggers', curve: 0.3},
+
+                // GameLoop queries ModifierRegistry
+                {from: 'gameLoop', to: 'modifierRegistry', label: 'queries', curve: 0.1},
+
+                // ModifierRegistry modifies calculations
+                {from: 'modifierRegistry', to: 'calculations', label: 'modifies', curve: 0.2},
+
+                // ModifierRegistry can also affect GameState directly (e.g. instant effects)
+                {from: 'modifierRegistry', to: 'gameState', label: 'applies', curve: 0.1, dashed: true},
+
+                // Calculations output
+                {from: 'calculations', to: 'ui', label: 'provides rates', curve: 0.25},
+                {from: 'calculations', to: 'saveFile', label: 'used for save', curve: 0.15},
+                {from: 'calculations', to: 'offlineCalc', label: 'offline rates', curve: 0.1},
+
+                // UI reads GameState
+                {from: 'gameState', to: 'ui', label: 'displays', curve: 0.2},
+
+                // Save/Load
+                {from: 'gameState', to: 'saveFile', label: 'save', curve: 0},
+                {from: 'saveFile', to: 'gameState', label: 'load', curve: -0.3},
+
+                // Offline
+                {from: 'offlineCalc', to: 'saveFile', label: 'uses', curve: 0.2},
+                {from: 'offlineCalc', to: 'gameState', label: 'updates', curve: -0.2},
+                // SaveFile can trigger offlineCalc on load
+                {from: 'saveFile', to: 'offlineCalc', label: 'triggers', curve: 0.1},
+            ];
+
+            // Canvas rendering
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const tooltip = document.getElementById('tooltip');
+            
+            let hoveredNode = null;
+
+            // Draw group backgrounds
+            function drawGroupBackgrounds() {
+                // Definitions group
+                ctx.fillStyle = 'rgba(218, 232, 252, 0.15)';
+                ctx.fillRect(20, 50, 240, 460);
+                ctx.strokeStyle = '#dae8fc';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(20, 50, 240, 460);
+                
+                // Systems label
+                ctx.fillStyle = '#64748b';
+                ctx.font = 'bold 14px Arial';
+                ctx.fillText('DEFINITIONS', 30, 40);
+            }
+
+            function drawNode(node) {
+                const width = 200;
+                const height = 60;
+                
+                // Shadow
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+                
+                // Node background
+                ctx.fillStyle = node === hoveredNode ? '#ffffff' : node.color;
+                ctx.fillRect(node.x, node.y, width, height);
+                
+                // Border
+                ctx.shadowColor = 'transparent';
+                ctx.strokeStyle = node === hoveredNode ? '#3b82f6' : '#475569';
+                ctx.lineWidth = node === hoveredNode ? 3 : 1.5;
+                ctx.strokeRect(node.x, node.y, width, height);
+                
+                // Label
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 14px Arial';
+                ctx.fillText(node.label, node.x + 10, node.y + 22);
+                
+                // Sublabel
+                if (node.sublabel) {
+                    ctx.fillStyle = '#64748b';
+                    ctx.font = '11px Arial';
+                    ctx.fillText(node.sublabel, node.x + 10, node.y + 40);
+                }
+            }
+
+            // Helper to merge/fan out lines visually (for multiple links with same source/target)
+            function getLinkOffset(index, total) {
+                if (total === 1) return 0;
+                const spread = 0.25; // more spread for clarity
+                return (index - (total - 1) / 2) * spread;
+            }
+
+            // Helper: check if a point is inside a node's bounding box
+            function isPointInNode(x, y, node) {
+                return x >= node.x && x <= node.x + 200 && y >= node.y && y <= node.y + 60;
+            }
+
+            // Helper: find if a line segment crosses any node (excluding from/to)
+            function crossesAnyNode(x1, y1, x2, y2, fromId, toId) {
+                for (const node of nodes) {
+                    if (node.id === fromId || node.id === toId) continue;
+                    // Simple AABB check for intersection
+                    const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
+                    const minY = Math.min(y1, y2), maxY = Math.max(y1, y2);
+                    if (
+                        maxX >= node.x && minX <= node.x + 200 &&
+                        maxY >= node.y && minY <= node.y + 60
+                    ) {
+                        // Further check: does the line pass through the node's box?
+                        // We'll just check mid-point for simplicity
+                        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+                        if (isPointInNode(mx, my, node)) return true;
+                    }
+                }
+                return false;
+            }
+
+            // Draw a bundled/avoiding arrow
+            function drawArrow(from, to, label, curve = 0, dashed = false, linkIndex = 0, linkTotal = 1) {
+                const fromNode = nodes.find(n => n.id === from);
+                const toNode = nodes.find(n => n.id === to);
+                if (!fromNode || !toNode) return;
+
+                // Calculate connection points (edges of rectangles)
+                const fromCenterX = fromNode.x + 100;
+                const fromCenterY = fromNode.y + 30;
+                const toCenterX = toNode.x + 100;
+                const toCenterY = toNode.y + 30;
+
+                // Determine exit/entry sides
+                const dx = toCenterX - fromCenterX;
+                const dy = toCenterY - fromCenterY;
+
+                let fromX, fromY, toX, toY;
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    // Horizontal connection
+                    fromX = dx > 0 ? fromNode.x + 200 : fromNode.x;
+                    fromY = fromCenterY;
+                    toX = dx > 0 ? toNode.x : toNode.x + 200;
+                    toY = toCenterY;
+                } else {
+                    // Vertical connection
+                    fromX = fromCenterX;
+                    fromY = dy > 0 ? fromNode.y + 60 : fromNode.y;
+                    toX = toCenterX;
+                    toY = dy > 0 ? toNode.y : toNode.y + 60;
+                }
+
+                // Bundle/fan out lines if multiple links share source/target
+                let bundleOffset = 0;
+                if (linkTotal > 1) {
+                    bundleOffset = getLinkOffset(linkIndex, linkTotal) * 60;
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        fromY += bundleOffset;
+                        toY += bundleOffset;
+                    } else {
+                        fromX += bundleOffset;
+                        toX += bundleOffset;
+                    }
+                }
+
+                // Node avoidance: if the direct line crosses a node, add a control point to curve around
+                let controlX = null, controlY = null;
+                if (crossesAnyNode(fromX, fromY, toX, toY, from, to)) {
+                    // Curve up or down depending on relative position
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        controlX = (fromX + toX) / 2;
+                        controlY = (fromY + toY) / 2 + 120 * Math.sign(bundleOffset || dy || 1);
+                    } else {
+                        controlX = (fromX + toX) / 2 + 120 * Math.sign(bundleOffset || dx || 1);
+                        controlY = (fromY + toY) / 2;
+                    }
+                }
+
+                // Draw shadow for clarity
+                ctx.save();
+                ctx.globalAlpha = 0.18;
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = (dashed ? 2.5 : 3.5);
+                ctx.beginPath();
+                ctx.moveTo(fromX, fromY);
+                if (controlX !== null && controlY !== null) {
+                    ctx.quadraticCurveTo(controlX, controlY, toX, toY);
+                } else if (curve !== 0) {
+                    const midX = (fromX + toX) / 2 + curve * 100;
+                    const midY = (fromY + toY) / 2 + curve * 50;
+                    ctx.quadraticCurveTo(midX, midY, toX, toY);
+                } else {
+                    ctx.lineTo(toX, toY);
+                }
+                ctx.stroke();
+                ctx.restore();
+
+                // Draw main line
+                ctx.strokeStyle = dashed ? '#94a3b8' : '#64748b';
+                ctx.lineWidth = dashed ? 1.5 : 2;
+                if (dashed) ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(fromX, fromY);
+                if (controlX !== null && controlY !== null) {
+                    ctx.quadraticCurveTo(controlX, controlY, toX, toY);
+                } else if (curve !== 0) {
+                    const midX = (fromX + toX) / 2 + curve * 100;
+                    const midY = (fromY + toY) / 2 + curve * 50;
+                    ctx.quadraticCurveTo(midX, midY, toX, toY);
+                } else {
+                    ctx.lineTo(toX, toY);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Arrowhead
+                const angle = Math.atan2(toY - fromY, toX - fromX);
+                ctx.fillStyle = dashed ? '#94a3b8' : '#64748b';
+                ctx.beginPath();
+                ctx.moveTo(toX, toY);
+                ctx.lineTo(toX - 10 * Math.cos(angle - Math.PI / 6), toY - 10 * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(toX - 10 * Math.cos(angle + Math.PI / 6), toY - 10 * Math.sin(angle + Math.PI / 6));
+                ctx.fill();
+
+                // Label
+                if (label) {
+                    const midX = controlX !== null ? controlX : (fromX + toX) / 2;
+                    const midY = controlY !== null ? controlY : (fromY + toY) / 2;
+                    ctx.fillStyle = '#ffffff';
+                    const textWidth = ctx.measureText(label).width;
+                    ctx.fillRect(midX - textWidth/2 - 2, midY - 12, textWidth + 4, 14);
+                    ctx.fillStyle = '#475569';
+                    ctx.font = '11px Arial';
+                    ctx.fillText(label, midX - textWidth/2, midY);
+                }
+            }
+
+            function getNodeAtPosition(x, y) {
+                for (const node of nodes) {
+                    if (x >= node.x && x <= node.x + 200 && y >= node.y && y <= node.y + 60) {
+                        return node;
+                    }
+                }
+                return null;
+            }
+
+            function showTooltip(node, x, y) {
+                tooltip.innerHTML = node.tooltip.replace(/\\n/g, '<br>');
+                tooltip.style.display = 'block';
+                tooltip.style.left = x + 'px';
+                tooltip.style.top = y + 'px';
+            }
+
+            function hideTooltip() {
+                tooltip.style.display = 'none';
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawGroupBackgrounds();
+                // Group links by source/target for fanning/merging
+                const grouped = {};
+                links.forEach(link => {
+                    const key = link.from + '->' + link.to;
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push(link);
+                });
+                Object.values(grouped).forEach(group => {
+                    group.forEach((link, i) => {
+                        drawArrow(link.from, link.to, link.label, link.curve || 0, link.dashed || false, i, group.length);
+                    });
+                });
+                nodes.forEach(drawNode);
+            }
+
+            // Mouse interaction
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const node = getNodeAtPosition(x, y);
+                
+                if (node !== hoveredNode) {
+                    hoveredNode = node;
+                    draw();
+                }
+                
+                if (node) {
+                    showTooltip(node, e.clientX + 15, e.clientY + 15);
+                    canvas.style.cursor = 'pointer';
+                } else {
+                    hideTooltip();
+                    canvas.style.cursor = 'default';
+                }
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                hoveredNode = null;
+                hideTooltip();
+                draw();
+            });
+
+            // Initial draw
+            draw();
+        </script>
+    </body>
+</html>

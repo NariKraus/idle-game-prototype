@@ -112,7 +112,7 @@ The Cell Stage represents the primordial beginning of life, where players guide 
 - _Default Cost:_ 8 Biomass, 5 ATP
 - _Waste Production:_ 0.2 per second
 - _Unlock Condition:_ None (starting)
-- Generates **1 ATP per second** automatically.
+- Generates **5 ATP per second** automatically at the cost of 2 Nutrients per second.
 - Each Mitochondria also increases ATP capacity by **+10**.
 - The powerhouse of the cell—essential for automation.
 
